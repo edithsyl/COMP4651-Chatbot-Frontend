@@ -52,7 +52,7 @@ class CustomCookieHandler:
         """
         if st.session_state['logout']:
             return False
-        self.token = self.cookie_manager.get(self.cookie_name)
+        self.token = self.cookie_manager.get(self.cookie_name) #self._get_token_from_auth()
         if self.token is not None:
             self.token = self._token_decode()
             if (self.token is not False and 'email' in self.token and
@@ -63,17 +63,20 @@ class CustomCookieHandler:
         Deletes the re-authentication cookie.
         """
         try:
+            # self.token = None 
             self.cookie_manager.delete(self.cookie_name)
         except KeyError as e:
             print(e)
+    
     def set_cookie(self):
         """
         Sets the re-authentication cookie.
         """
         self.exp_date = self._set_exp_date()
-        token = self._token_encode()
-        self.cookie_manager.set(self.cookie_name, token,
+        self.token = self._get_token_from_auth()
+        self.cookie_manager.set(self.cookie_name, self._token_encode(),
                                 expires_at=datetime.now() + timedelta(days=self.cookie_expiry_days))
+
     def _set_exp_date(self) -> str:
         """
         Sets the re-authentication cookie's expiry date.
@@ -84,6 +87,7 @@ class CustomCookieHandler:
             re-authentication cookie's expiry timestamp in Unix Epoch.
         """
         return (datetime.utcnow() + timedelta(days=self.cookie_expiry_days)).timestamp()
+    
     def _token_decode(self) -> str:
         """
         Decodes the contents of the re-authentication cookie.
@@ -101,7 +105,23 @@ class CustomCookieHandler:
         except DecodeError as e:
             print(e)
             return False
+
     def _token_encode(self) -> str:
+        """
+        Encodes the contents of the re-authentication cookie.
+
+        Returns
+        -------
+        str
+            Cookie used for password-less re-authentication.
+        """
+        from_res = self._get_token_from_auth()
+        decrypted = jwt.decode(jwt=from_res, key='secret', algorithms=['HS256'])
+        return jwt.encode(decrypted, self.cookie_key, algorithm='HS256')
+        # return jwt.encode({'email': st.session_state['email'],
+        #     'exp_date': self.exp_date}, self.cookie_key, algorithm='HS256')
+
+    def _get_token_from_auth(self) -> str:
         """
         Encodes the contents of the re-authentication cookie.
 

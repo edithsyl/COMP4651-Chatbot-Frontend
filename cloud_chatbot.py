@@ -12,6 +12,7 @@ from streamlit_authenticator.utilities.exceptions import DeprecationError
 from streamlit_authenticator.authenticate.cookie import CookieHandler
 from streamlit_authenticator.authenticate.authentication import AuthenticationHandler
 from customAuthentication import CustomAuthenticationHandler
+from customCookie import CustomCookieHandler
 # custom login component
 
 import yaml
@@ -22,15 +23,17 @@ from pathlib import Path
 from openai import AzureOpenAI
 from io import StringIO
 
+from apis import apis
+
 "st.session_state object:", st.session_state      # for testing
 
-apis = {
-    "CHAT": "https://httpbin.org/get",# "https://v1/chat",
-    "TRANSLATE": "https://httpbin.org/get",# "https://v1/translate",
-    "LOGIN": "http://127.0.0.1:8080/function/login",
-    # "DRAW":  "https://httpbin.org/get",# "https://v1/media",
-    # "MUSIC": "https://httpbin.org/get",#  "https://v1/music",
-}
+# apis = {
+#     "CHAT": "https://httpbin.org/get",# "https://v1/chat",
+#     "TRANSLATE": "https://httpbin.org/get",# "https://v1/translate",
+#     "LOGIN": "http://127.0.0.1:8080/function/login",
+#     # "DRAW":  "https://httpbin.org/get",# "https://v1/media",
+#     # "MUSIC": "https://httpbin.org/get",#  "https://v1/music",
+# }
 
 
 # ---------- def custom login widget ------------
@@ -40,7 +43,7 @@ class CustomAuthenticate:
         Create a new instance of "Authenticate".
         """
         self.authentication_handler     =   CustomAuthenticationHandler()
-        self.cookie_handler             =   CookieHandler("random_cookie_name", "random_signature_key", 30)
+        self.cookie_handler             =   CustomCookieHandler("random_cookie_name", "random_signature_key", 30)
 
 
     def customLogin(self, location: str='main', max_concurrent_users: Optional[int]=None,
@@ -94,7 +97,8 @@ class CustomAuthenticate:
                         else fields['Password'], type='password')
                     if login_form.form_submit_button('Login' if 'Login' not in fields
                         else fields['Login']):
-                        if self.authentication_handler.check_credentials(email, password):
+                        check_result = self.authentication_handler.check_credentials(email, password)
+                        if check_result == True:
                             self.authentication_handler.execute_login(email=email)
                             self.cookie_handler.set_cookie()
             return (st.session_state['name'], st.session_state['authentication_status'],
@@ -144,30 +148,15 @@ sessions = {"sessionIds": [
 with file_path.open("rb") as file:
     config = yaml.load(file, Loader=SafeLoader)
 
-# with session_file_path.open("rb") as file:
-#     sessions = yaml.load(file, Loader=SafeLoader)
-
-# Create the authenticator object
-# authenticator = stauth.Authenticate(    
-#     config['credentials'],
-#     config['cookie']['name'],
-#     config['cookie']['key'],
-#     config['cookie']['expiry_days'],
-#     config['preauthorized']
-# )
-
-# # retrieve the name, authentication status, and username from Streamlit's session state using st.session_state["name"], st.session_state["authentication_status"], and st.session_state["username"]
-# authenticator.login()
-
 # custom
 cauth = CustomAuthenticate()
 cauth.customLogin()
 
 if st.session_state["authentication_status"] == False:
-    st.error("Username/password is incorrect")
+    st.error("Email/password is incorrect")
 
 if st.session_state["authentication_status"] == None:
-    st.warning("Please enter your username and password")
+    st.warning("Please enter your email and password")
 
 if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
 
@@ -235,9 +224,6 @@ if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
             st.chat_message(msg['role']).write(msg["content"]["text"])
 
         if user_resp := st.chat_input("say something"):
-            # if not open_api_key:
-            #     st.info("Please add your Azure OpenAI API key to continue.")
-            #     st.stop()
             st.session_state['messages'].append({"role": "user", "content":{"type":"text" ,"text":user_resp }})
             st.chat_message("user").write(user_resp)
 
@@ -246,9 +232,6 @@ if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         for msg in st.session_state.messages:
             st.chat_message(msg['role']).write(msg["content"]["text"])
         if user_resp := st.chat_input("say something"):
-            # if not open_api_key:
-            #     st.info("Please add your Azure OpenAI API key to continue.")
-            #     st.stop()
             st.session_state['messages'].append({"role": "user", "content":{"type":"text" ,"text":user_resp }})
             st.chat_message("user").write(user_resp)
         
@@ -268,39 +251,3 @@ if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
                 }
             }
         test = {"firstName": "John", "lastName": "Smith"}
-        # r = requests.post(apis.get(st.session_state['mode']), data=test)
-        # st.caption("print r: "+r.text)
-        # --------- sending requests ---------
-        
-        # --------- from original code ---------
-        # if "messages" not in st.session_state:
-        #     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-
-        # for msg in st.session_state.messages:
-        #     st.chat_message(msg["role"]).write(msg["content"])
-
-        # if prompt := st.chat_input():
-        #     if not openai_api_key:
-        #         st.info("Please add your Azure OpenAI API key to continue.")
-        #         st.stop()
-
-        #     st.session_state.messages.append(
-        #         {"role": "user", "content": prompt}
-        #     )
-        #     st.chat_message("user", avatar="🙋‍♂️").write(prompt)
-
-        #     # setting up the OpenAI model
-        #     client = AzureOpenAI(
-        #         api_key=openai_api_key,
-        #         api_version="2023-12-01-preview",
-        #         azure_endpoint="https://hkust.azure-api.net/",
-        #     )
-        #     response = client.chat.completions.create(
-        #         model=model_name,
-        #         messages=st.session_state.messages
-        #     )
-
-        #     msg = response.choices[0].message.content
-        #     st.session_state.messages.append({"role": "assistant", "content": msg})
-        #     st.chat_message("assistant").write(msg)
-            # --------- from original code end ---------

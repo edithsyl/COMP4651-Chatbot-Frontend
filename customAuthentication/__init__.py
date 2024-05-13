@@ -46,12 +46,6 @@ class CustomAuthenticationHandler:
         validator: Validator
             Validator object that checks the validity of the username, name, and email fields.
         """
-        # self.credentials                =   credentials
-        # self.pre_authorized             =   pre_authorized
-        # self.credentials['usernames']   =   {
-        #                                     key.lower(): value
-        #                                     for key, value in credentials['usernames'].items()
-        #                                     }
         self.validator                  =   validator if validator is not None else Validator()
 
         if 'name' not in st.session_state:
@@ -132,12 +126,14 @@ class CustomAuthenticationHandler:
         token: dict
             The re-authentication cookie to retrieve the username from.
         """
-        if st.session_state['FormSubmitter:Login-Login'] == True:
-            st.session_state['email'] = email
-            st.session_state['name'] =  self.login_t # self.credentials['email'][email]['name'] 
-            st.session_state['authentication_status'] = True
+        # if st.session_state['FormSubmitter:Login-Login'] == True:
+        st.session_state['email'] = email
+        st.session_state['name'] =  self.login_t # self.credentials['email'][email]['name'] 
+        st.session_state['authentication_status'] = True
             # self._record_failed_login_attempts(username, reset=True)
             # self.credentials['emails'][email]['logged_in'] = True
+        # elif st.session_state['FormSubmitter:Login-Login'] == False:   
+        #     st.session_state['authentication_status'] = True
         # elif token:
         #     st.session_state['username'] = token['username']
         #     st.session_state['name'] = self.credentials['usernames'][token['username']]['name']
