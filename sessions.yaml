@@ -21,21 +21,3 @@ sessions:
                   "content": "test 3?"
                   },
               ]
-  s3:
-    mode: "DRAW"
-    title: "Test 3"
-    messages: [
-                  {
-                  "role": "user", 
-                  "content": "test 3?"
-                  },
-              ]
-  s4:
-    mode: "MUSIC"
-    title: "Test 4"
-    messages: [
-                  {
-                  "role": "user", 
-                  "content": "test 4?"
-                  },
-              ]
