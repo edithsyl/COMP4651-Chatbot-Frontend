@@ -27,15 +27,6 @@ from apis import apis
 
 "st.session_state object:", st.session_state      # for testing
 
-# apis = {
-#     "CHAT": "https://httpbin.org/get",# "https://v1/chat",
-#     "TRANSLATE": "https://httpbin.org/get",# "https://v1/translate",
-#     "LOGIN": "http://127.0.0.1:8080/function/login",
-#     # "DRAW":  "https://httpbin.org/get",# "https://v1/media",
-#     # "MUSIC": "https://httpbin.org/get",#  "https://v1/music",
-# }
-
-
 # ---------- def custom login widget ------------
 class CustomAuthenticate:
     def __init__(self):
@@ -169,6 +160,12 @@ if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
     if 'mode' not in st.session_state:
         st.session_state['mode'] = 'chat'
 
+    if 'session_history' not in st.session_state:
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
+        session_history_r = requests.post(apis.get("GET-CHAT-SESSIONS"), headers=headers)
+        session_history_r_obj = session_history_r.json() 
+        st.session_state['session_history'] = session_history_r_obj
+
     # ------ function for  ------ #
     def openSession(s_id):
         st.session_state['display'] = 'CHATROOM'
@@ -214,7 +211,7 @@ if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
 
     model_name = "gpt-35-turbo"
     if st.session_state['display'] == 'HOME':
-        st.subheader("Welcome, "+st.session_state["name"])
+        st.subheader("Welcome, "+st.session_state["login_tok"])
         # Chat, Translate = st.tabs(["💬 Chat", "🗣️ Translate"])
         st.caption("Start a new chat below")
         if "messages" not in st.session_state:

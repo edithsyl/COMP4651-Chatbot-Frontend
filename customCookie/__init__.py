@@ -73,7 +73,7 @@ class CustomCookieHandler:
         Sets the re-authentication cookie.
         """
         self.exp_date = self._set_exp_date()
-        self.token = self._get_token_from_auth()
+        self.token = st.session_state['login_tok']
         self.cookie_manager.set(self.cookie_name, self._token_encode(),
                                 expires_at=datetime.now() + timedelta(days=self.cookie_expiry_days))
 
@@ -115,7 +115,7 @@ class CustomCookieHandler:
         str
             Cookie used for password-less re-authentication.
         """
-        from_res = self._get_token_from_auth()
+        from_res = st.session_state['login_tok']
         decrypted = jwt.decode(jwt=from_res, key='secret', algorithms=['HS256'])
         return jwt.encode(decrypted, self.cookie_key, algorithm='HS256')
         # return jwt.encode({'email': st.session_state['email'],
@@ -130,6 +130,6 @@ class CustomCookieHandler:
         str
             Cookie used for password-less re-authentication.
         """
-        return CustomAuthenticationHandler.getLoginT
+        return st.session_state['login_tok']
         # return jwt.encode({'email': st.session_state['email'],
         #     'exp_date': self.exp_date}, self.cookie_key, algorithm='HS256')

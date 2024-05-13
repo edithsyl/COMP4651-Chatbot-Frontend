@@ -78,7 +78,6 @@ class CustomAuthenticationHandler:
                 # --------- sending login requests ---------
                 test = {"email": email, "password": password}
                 login_r = requests.post(apis.get("LOGIN"), data=test)
-                "login_r:", login_r.text     # for testing
                 login_r_obj = login_r.json() 
                 if login_r_obj["token"] is not None:
                     self.login_t = login_r_obj["token"] 
@@ -128,7 +127,7 @@ class CustomAuthenticationHandler:
         """
         # if st.session_state['FormSubmitter:Login-Login'] == True:
         st.session_state['email'] = email
-        st.session_state['name'] =  self.login_t # self.credentials['email'][email]['name'] 
+        st.session_state['login_tok'] =  self.login_t # self.credentials['email'][email]['name'] 
         st.session_state['authentication_status'] = True
             # self._record_failed_login_attempts(username, reset=True)
             # self.credentials['emails'][email]['logged_in'] = True
@@ -170,6 +169,7 @@ class CustomAuthenticationHandler:
                     self._set_random_password(username))
         else:
             return False, None, None
+        
     def forgot_username(self, email: str) -> tuple:
         """
         Retrieves the forgotten username of a user.
@@ -187,6 +187,7 @@ class CustomAuthenticationHandler:
         if not self.validator.validate_length(email, 1):
             raise ForgotError('Email not provided')
         return self._get_username('email', email), email
+    
     def _get_username(self, key: str, value: str) -> str:
         """
         Retrieves the username based on a provided entry.
@@ -207,21 +208,7 @@ class CustomAuthenticationHandler:
             if values[key] == value:
                 return email
         return False
-    def _record_failed_login_attempts(self, email: str, reset: bool=False):
-        """
-        Records the number of failed login attempts for a given username.
-        
-        Parameters
-        ----------
-        reset: bool            
-            Reset failed login attempts option, True: number of failed login attempts
-            for the user will be reset to 0, 
-            False: number of failed login attempts for the user will be incremented.
-        """
-        if reset:
-            self.credentials['emails'][email]['failed_login_attempts'] = 0
-        else:
-            self.credentials['emails'][email]['failed_login_attempts'] += 1
+
 
     def _register_credentials(self, email: str, name: str, password: str, pre_authorization: bool, domains: list):
         """
