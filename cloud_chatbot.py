@@ -145,7 +145,12 @@ def create_new_user(username, email, password):
     # connect to backend: call to see if there is duplicated username/ email
     # if yes, ask for input again
     # else post a request to backend: create new user and auto login
-    login_r_obj = {"token": "dummytoken:successSignup"}
+    creation_failure = False
+    if creation_failure:
+        st.write("use another username or email")
+        login_r_obj = {"token": None}
+    else:
+        login_r_obj = {"token": "dummytoken:successSignup"}
     if login_r_obj['token'] is not None:
         st.session_state['authentication_status']=True
         st.session_state['login_tok'] = login_r_obj['token']
