@@ -87,10 +87,10 @@ class CustomAuthenticate:
                     password = login_form.text_input('Password' if 'Password' not in fields
                         else fields['Password'], type='password')
                     if login_form.form_submit_button('Login' if 'Login' not in fields
-                        else fields['Login']):
-                        check_result = self.authentication_handler.check_credentials(email, password)
-                        if check_result == True:
-                            self.authentication_handler.execute_login(email=email)
+                        else fields['Login'], on_click=self.authentication_handler.check_credentials, args=(email, password, )):
+                        
+                        if st.session_state['authentication_status'] == True:
+                            # self.authentication_handler.execute_login(email=email)
                             self.cookie_handler.set_cookie()
             return (st.session_state['name'], st.session_state['authentication_status'],
                     st.session_state['email'])

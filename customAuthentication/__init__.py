@@ -58,6 +58,7 @@ class CustomAuthenticationHandler:
             st.session_state['logout'] = None
 
     def check_credentials(self, email: str, password: str) -> bool:
+    # def check_credentials(self, email: str, password: str) -> bool:
         """
         Checks the validity of the entered credentials.
 
@@ -77,11 +78,15 @@ class CustomAuthenticationHandler:
             try:
                 # --------- sending login requests ---------
                 test = {"email": email, "password": password}
+                st.write("e: "+email)
                 login_r = requests.post(apis.get("LOGIN"), data=test)
                 login_r_obj = login_r.json() 
                 if login_r_obj["token"] is not None:
                     self.login_t = login_r_obj["token"] 
                     # st.session_state['authentication_status'] = True
+                    # email = test["email"]
+                    self.execute_login(email=email)
+                    # self.cookie_handler.set_cookie() #TODO
                     return True
                 else:
                     # st.session_state['authentication_status'] = False
