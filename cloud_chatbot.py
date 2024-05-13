@@ -99,6 +99,34 @@ class CustomAuthenticate:
                             self.cookie_handler.set_cookie()
             return (st.session_state['name'], st.session_state['authentication_status'],
                     st.session_state['email'])
+    
+    def logout(self, button_name: str='Logout', location: str='main', key: Optional[str]=None):
+        """
+        Creates a logout button.
+
+        Parameters
+        ----------
+        button_name: str
+            Rendered name of the logout button.
+        location: str
+            Location of the logout button i.e. main or sidebar or unrendered.
+        key: str
+            Unique key to be used in multi-page applications.
+        """
+        if location not in ['main', 'sidebar','unrendered']:
+            raise ValueError("Location must be one of 'main' or 'sidebar' or 'unrendered'")
+        if location == 'main':
+            if st.button(button_name, key):
+                self.authentication_handler.execute_logout()
+                self.cookie_handler.delete_cookie()
+        elif location == 'sidebar':
+            if st.sidebar.button(button_name, key):
+                self.authentication_handler.execute_logout()
+                self.cookie_handler.delete_cookie()
+        elif location == 'unrendered':
+            if st.session_state['authentication_status']:
+                self.authentication_handler.execute_logout()
+                self.cookie_handler.delete_cookie()
 
 # ---------- custom login widget end ------------
 

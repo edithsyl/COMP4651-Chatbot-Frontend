@@ -24,6 +24,8 @@ from streamlit_authenticator.utilities.exceptions import (CredentialsError,
 import requests
 from apis import apis
 
+import json
+
 class CustomAuthenticationHandler:
     """
     This class will execute the logic for the login, logout, register user, reset password, 
@@ -51,16 +53,7 @@ class CustomAuthenticationHandler:
         #                                     for key, value in credentials['usernames'].items()
         #                                     }
         self.validator                  =   validator if validator is not None else Validator()
-        # self.random_password            =   None
 
-        # for username, _ in self.credentials['usernames'].items():
-        #     if 'logged_in' not in self.credentials['usernames'][username]:
-        #         self.credentials['usernames'][username]['logged_in'] = False
-        #     if 'failed_login_attempts' not in self.credentials['usernames'][username]:
-        #         self.credentials['usernames'][username]['failed_login_attempts'] = 0
-        #     if not Hasher._is_hash(self.credentials['usernames'][username]['password']):
-        #         self.credentials['usernames'][username]['password'] = \
-        #             Hasher._hash(self.credentials['usernames'][username]['password'])
         if 'name' not in st.session_state:
             st.session_state['name'] = None
         if 'authentication_status' not in st.session_state:
@@ -69,6 +62,7 @@ class CustomAuthenticationHandler:
             st.session_state['email'] = None
         if 'logout' not in st.session_state:
             st.session_state['logout'] = None
+
     def check_credentials(self, email: str, password: str) -> bool:
         """
         Checks the validity of the entered credentials.
@@ -90,13 +84,15 @@ class CustomAuthenticationHandler:
                 # --------- sending login requests ---------
                 test = {"email": email, "password": password}
                 login_r = requests.post(apis.get("LOGIN"), data=test)
-                "login_r:", login_r      # for testing
-                if hasattr(login_r, 'error') == None:
-                    self.login_t = login_r.token
+                "login_r:", login_r.text     # for testing
+                login_r_obj = login_r.json() 
+                if login_r_obj["token"] is not None:
+                    self.login_t = login_r_obj["token"] 
                     # st.session_state['authentication_status'] = True
                     return True
                 else:
                     # st.session_state['authentication_status'] = False
+                    raise RegisterError(login_r_obj["error"] )
                     return False
             except TypeError as e:
                 print(e)
@@ -106,20 +102,8 @@ class CustomAuthenticationHandler:
             st.session_state['authentication_status'] = False
             return False
         return None
-    def _count_concurrent_users(self) -> int:
-        """
-        Counts the number of users logged in concurrently.
-
-        Returns
-        -------
-        int
-            Number of users logged in concurrently.
-        """
-        concurrent_users = 0
-        for username, _ in self.credentials['usernames'].items():
-            if self.credentials['usernames'][username]['logged_in']:
-                concurrent_users += 1
-        return concurrent_users
+    
+    
     def _credentials_contains_value(self, value: str) -> bool:
         """
         Checks to see if a value is present in the credentials dictionary.
@@ -164,10 +148,10 @@ class CustomAuthenticationHandler:
         """
         Clears cookie and session state variables associated with the logged in user.
         """
-        self.credentials['usernames'][st.session_state['username']]['logged_in'] = False
+        # self.credentials['usernames'][st.session_state['email']]['logged_in'] = False
         st.session_state['logout'] = True
         st.session_state['name'] = None
-        st.session_state['username'] = None
+        st.session_state['email'] = None
         st.session_state['authentication_status'] = None
     def forgot_password(self, username: str) -> tuple:
         """
@@ -242,6 +226,7 @@ class CustomAuthenticationHandler:
             self.credentials['emails'][email]['failed_login_attempts'] = 0
         else:
             self.credentials['emails'][email]['failed_login_attempts'] += 1
+
     def _register_credentials(self, email: str, name: str, password: str, pre_authorization: bool, domains: list):
         """
         Adds the new user's information to the credentials dictionary.
@@ -442,3 +427,5 @@ class CustomAuthenticationHandler:
         else:
             raise UpdateError('New and current values are the same')
         
+    def getLoginT(self)->str:
+        return self.login_t
