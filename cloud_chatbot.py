@@ -140,6 +140,16 @@ def check_credentials(email, password):
         st.session_state['username'] = 'alice'
     else:
         st.write("invalid email or password")
+def create_new_user(username, email, password):
+    new_user_body = {'username': username, 'email': email, 'password': password}
+    # connect to backend: call to see if there is duplicated username/ email
+    # if yes, ask for input again
+    # else post a request to backend: create new user and auto login
+    login_r_obj = {"token": "dummytoken:successSignup"}
+    if login_r_obj['token'] is not None:
+        st.session_state['authentication_status']=True
+        st.session_state['login_tok'] = login_r_obj['token']
+        st.session_state['username'] = 'alice'
 
 # ------ USER AUTHENTICATION ----- #
 # Import the YAML dummy file
@@ -168,12 +178,22 @@ with file_path.open("rb") as file:
 
 def login():
     placeholder = st.empty()
-    login_form = placeholder.form('Login', clear_on_submit=False)
-    
-    login_form.subheader('Login')
-    email = login_form.text_input('Email').lower()
-    password = login_form.text_input('Password', type='password')
-    login_form.form_submit_button('Login', on_click=check_credentials, args=(email, password, ))
+    tabLogin, tabSignup = placeholder.tabs(['login', 'sign up'])
+    with tabLogin:
+        login_form = tabLogin.form('Login', clear_on_submit=False)
+        
+        login_form.subheader('Login')
+        email = login_form.text_input('Email').lower()
+        password = login_form.text_input('Password', type='password')
+        login_form.form_submit_button('Login', on_click=check_credentials, args=(email, password, ))
+    with tabSignup:
+        signup_form = tabSignup.form("Sign Up", clear_on_submit=False)
+
+        signup_form.subheader("Sign Up")
+        username = signup_form.text_input('username')
+        email = signup_form.text_input('Email').lower()
+        password = signup_form.text_input('Password', type='password')
+        signup_form.form_submit_button("Sign Up", on_click=create_new_user, args=(username, email, password))
 def logout():
     st.session_state['authentication_status']=False
     st.session_state['login_tok'] = None
