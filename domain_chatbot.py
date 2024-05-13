@@ -5,7 +5,7 @@ from openai import AzureOpenAI
 # Initial message content as a JSON object
 initial_content = {
     "isNextState": False,
-    "resp": "I amd a chatbot to provide personalized weight loss advice. Nice to meet you! 😊",
+    "resp": "I am a chatbot to provide personalized weight loss advice. Nice to meet you! 😊",
     "data": ""
 }
 

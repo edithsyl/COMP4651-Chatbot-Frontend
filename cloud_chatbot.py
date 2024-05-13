@@ -27,9 +27,9 @@ from io import StringIO
 apis = {
     "CHAT": "https://httpbin.org/get",# "https://v1/chat",
     "TRANSLATE": "https://httpbin.org/get",# "https://v1/translate",
-    "DRAW":  "https://httpbin.org/get",# "https://v1/media",
-    "MUSIC": "https://httpbin.org/get",#  "https://v1/music",
     "LOGIN": "http://127.0.0.1:8080/function/login",
+    # "DRAW":  "https://httpbin.org/get",# "https://v1/media",
+    # "MUSIC": "https://httpbin.org/get",#  "https://v1/music",
 }
 
 
@@ -133,13 +133,19 @@ class CustomAuthenticate:
 # ------ USER AUTHENTICATION ----- #
 # Import the YAML dummy file
 file_path = Path(__file__).parent / "user_credentials.yaml"
-session_file_path = Path(__file__).parent / "sessions.yaml"
+# session_file_path = Path(__file__).parent / "sessions.yaml"
+# connect to backend: get all sessions from that user (post: get session ID by user)
+# current hardcode:
+sessions = {"sessionIds": [
+        "6641e7a9a9af8ede1899ea75",
+        "6641e7a9a9af8ede1899ea76",
+        "6641ed29a77b0206c5675339"]}
 
 with file_path.open("rb") as file:
     config = yaml.load(file, Loader=SafeLoader)
 
-with session_file_path.open("rb") as file:
-    sessions = yaml.load(file, Loader=SafeLoader)
+# with session_file_path.open("rb") as file:
+#     sessions = yaml.load(file, Loader=SafeLoader)
 
 # Create the authenticator object
 # authenticator = stauth.Authenticate(    
@@ -172,129 +178,80 @@ if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         st.session_state['display'] = 'HOME' # or 'CHATROOM'
 
     if 'mode' not in st.session_state:
-        st.session_state['mode'] = 'CHAT'
+        st.session_state['mode'] = 'chat'
 
     # ------ function for  ------ #
     def openSession(s_id):
         st.session_state['display'] = 'CHATROOM'
         st.session_state['s_id'] = s_id
+        st.session_state['messages'] = [{"role": "user", "content": {"type": "text", "text": "history"}}]
+        # the above code is hard coded
+        # connect to backend: get chat history and put into messages
+        st.session_state['mode'] = "chat" # hard coded
+        # connect to backend: get chat history as well as the session mode
+        
+    
+    def createSession(u_id, mode):
+        st.session_state['display'] = 'HOME'
+        st.session_state['s_id'] = str(len(sessions['sessionIds'])+1)
+        st.session_state['mode'] = mode
+        sessions['sessionIds'].append(str(len(sessions['sessionIds'])+1))
+        if 'messages' in st.session_state:
+            del st.session_state['messages']
+        # the above line of code is hard coded
+        # connect to backend: use the user id to generate a new session
+        st.write(st.session_state['s_id'])
+        st.write(st.session_state['mode'])
 
+    
     with st.sidebar:
         # buttons
         cauth.logout()  
 
         # generate session buttons
         st.title("Chatrooms")
+        user_id = 1 # hard code user id
 
-        newchat = st.button('➕ Create new chat', use_container_width=100)
-
-        if newchat:
-            st.session_state['display'] = 'HOME'
+        mode = st.radio("Select mode for new chat session", ["chat", "translate"])
+        newchat = st.button('➕ Create', use_container_width=100, on_click=createSession, args=(user_id, mode,))
         
-        for session_id, session_data in sessions['sessions'].items():
-            title = 'Default'
-            if session_data['mode'] == 'CHAT':
-                title = '💬 ' + session_data['title']
-            if session_data['mode'] == 'TRANSLATE':
-                title = '🗣️ ' + session_data['title']
-            if session_data['mode'] == 'DRAW':
-                title = '🎨 ' + session_data['title']
-            if session_data['mode'] == 'MUSIC':
-                title = '🎵 ' + session_data['title']
+        
+        for session_id in sessions['sessionIds']:
+            st.button(session_id, use_container_width=100, on_click=openSession, args=(session_id,))
 
-            st.button(title, use_container_width=100, on_click=openSession, args=(session_id,))
-
-        openai_api_key = st.text_input("Azure OpenAI API Key", key="chatbot_api_key", type="password")
-        "[Get an Azure OpenAI API key](https://itsc.hkust.edu.hk/services/it-infrastructure/azure-openai-api-service)"
+        # openai_api_key = st.text_input("Azure OpenAI API Key", key="chatbot_api_key", type="password")
+        # "[Get an Azure OpenAI API key](https://itsc.hkust.edu.hk/services/it-infrastructure/azure-openai-api-service)"
 
 
     model_name = "gpt-35-turbo"
     if st.session_state['display'] == 'HOME':
         st.subheader("Welcome, "+st.session_state["name"])
-        
+        # Chat, Translate = st.tabs(["💬 Chat", "🗣️ Translate"])
         st.caption("Start a new chat below")
+        if "messages" not in st.session_state:
+            st.session_state["messages"] = [{"role":"assistant", "content": {"type":"text", "text": "welcome!!"}}]
 
-        Chat, Translate, Draw, Music = st.tabs(["💬 Chat", "🗣️ Translate", "🎨 Draw", "🎵 Music"])
+        for msg in st.session_state.messages:
+            st.chat_message(msg['role']).write(msg["content"]["text"])
 
-        with Chat:
-            model_name = "gpt-35-turbo"
+        if user_resp := st.chat_input("say something"):
+            # if not open_api_key:
+            #     st.info("Please add your Azure OpenAI API key to continue.")
+            #     st.stop()
+            st.session_state['messages'].append({"role": "user", "content":{"type":"text" ,"text":user_resp }})
+            st.chat_message("user").write(user_resp)
 
-        with Translate:
-            model_name = "gpt-35-turbo"
-            # --------- upload document -------------
-            uploaded_file = st.file_uploader(
-                label="📄 upload document", 
-                type=['doc', 'docx', 'pdf'],
-                accept_multiple_files=False
-            )
-
-            if uploaded_file is not None:
-                # To read file as bytes:
-                # bytes_data = textract.process(uploaded_file)
-                bytes_data = uploaded_file.getvalue()
-                st.write(bytes_data)
-
-                # To convert to a string based IO:
-                # stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-                # st.write(stringio)
-
-                # To read file as string:
-                string_data = bytes_data.read()
-                # string_data = stringio.read()
-                st.write(string_data)
-
-
-        with Draw:
-            model_name = "gpt-35-turbo"
-            # --------- upload media -------------
-            uploaded_files = st.file_uploader(
-                label=":frame_with_picture: upload image(s)", 
-                type=['png', 'jpg'],
-                accept_multiple_files=True
-            )
-
-            if uploaded_files is not None:
-                for uploaded_file in uploaded_files:
-                    bytes_data = uploaded_file.read()
-                    st.write("filename:", uploaded_file.name)
-                    st.write(bytes_data)
-
-        with Music:
-            model_name = "gpt-35-turbo"
-            # --------- upload media -------------
-            uploaded_files = st.file_uploader(
-                label="🎶 upload mp3", 
-                type=['mp3', 'mp4'],
-                accept_multiple_files=True
-            )
-            if uploaded_files is not None:
-                for uploaded_file in uploaded_files:
-                    bytes_data = uploaded_file.read()
-                    st.write("filename:", uploaded_file.name)
-                    st.write(bytes_data)
-
-    # when a user click a session button in the sidebar or create a new chatroom in the homepage
     elif st.session_state['display'] == 'CHATROOM':
-        s_title = 'Default'
-        session_items= sessions['sessions']
-        sid = st.session_state['s_id'] 
-
-        if session_items[sid]['mode'] == 'CHAT':
-            s_title = '💬 ' + session_items[sid]['title']
-        if session_items[sid]['mode'] == 'TRANSLATE':
-            s_title = '🗣️ ' + session_items[sid]['title']
-        if session_items[sid]['mode'] == 'DRAW':
-            s_title = '🎨 ' + session_items[sid]['title']
-        if session_items[sid]['mode'] == 'MUSIC':
-            s_title = '🎵 ' + session_items[sid]['title']
-
-        if session_items[sid]['messages'] is not None:
-            st.session_state["messages"] =  session_items[sid]['messages']
-        else:
-            st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-
-        # interface
-        st.title(s_title)
+        st.subheader("Welcome to chat session: "+st.session_state['s_id'])
+        for msg in st.session_state.messages:
+            st.chat_message(msg['role']).write(msg["content"]["text"])
+        if user_resp := st.chat_input("say something"):
+            # if not open_api_key:
+            #     st.info("Please add your Azure OpenAI API key to continue.")
+            #     st.stop()
+            st.session_state['messages'].append({"role": "user", "content":{"type":"text" ,"text":user_resp }})
+            st.chat_message("user").write(user_resp)
+        
             
         # --------- sending requests ---------
         d = {  
@@ -311,8 +268,8 @@ if st.session_state["authentication_status"]: # USER AUTHENTICATION is success
                 }
             }
         test = {"firstName": "John", "lastName": "Smith"}
-        r = requests.post(apis.get(st.session_state['mode']), data=test)
-        st.caption("print r: "+r.text)
+        # r = requests.post(apis.get(st.session_state['mode']), data=test)
+        # st.caption("print r: "+r.text)
         # --------- sending requests ---------
         
         # --------- from original code ---------
