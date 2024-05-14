@@ -1,8 +1,4 @@
 apis = {
-    # "CHAT": "https://httpbin.org/get",# "https://v1/chat",
-    # "TRANSLATE": "https://httpbin.org/get",# "https://v1/translate",
-    # "DRAW":  "https://httpbin.org/get",# "https://v1/media",
-    # "MUSIC": "https://httpbin.org/get",#  "https://v1/music",
     "SIGNUP": "http://127.0.0.1:8080/function/sign-up",
     "LOGIN": "http://127.0.0.1:8080/function/login",
     "CREATE-CHAT-SESSION": "http://127.0.0.1:8080/function/create-chat-session",

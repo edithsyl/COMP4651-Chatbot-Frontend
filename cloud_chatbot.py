@@ -1,12 +1,7 @@
 import requests
 import streamlit as st
 
-from typing import Optional
-# from streamlit_authenticator.utilities.validator import Validator
-from streamlit_authenticator.utilities.exceptions import DeprecationError
-
 from apis import apis
-
 
 # # ---------- custom login widget end ------------
 def check_credentials():
@@ -103,7 +98,6 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
         session_ids_r = requests.post(apis.get("GET-CHAT-SESSIONS"), headers=headers)
         session_ids_r_obj = session_ids_r.json() 
-        st.write(f'session_ids_r_obj: {session_ids_r_obj}') #test
         if 'sessionIds' in session_ids_r_obj:
             st.session_state['sessionIds'] = session_ids_r_obj['sessionIds']
         elif 'error' in session_ids_r_obj:
@@ -117,22 +111,25 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         # the above code is hard coded
         # connect to backend: get chat history and put into messages
 
-        # TODO: request s_id session histories
+        # request s_id session histories
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
-        body = {"sessionId": s_id, "from": "2024-05-12T13:12:06.226Z", "limit": 50}
-        session_hists_r = requests.post(apis.get("GET-CHAT-HISTORIES"), headers=headers, data=body)
-        session_hists_r_obj = session_hists_r.json() 
-        st.write(f'session_hists_r_obj: {session_hists_r_obj}') #test
-        if 'histories' in session_hists_r_obj:
-            st.session_state['histories'] = session_hists_r_obj['histories']
-        elif 'error' in session_ids_r_obj:
-            st.error(st.session_state['error'], icon="🚨")
+        body = {"sessionId": s_id}
+        session_hists_r = requests.post(apis.get("GET-CHAT-HISTORIES"), headers=headers, data=body) # ERROR: don't know why it return string "<Response [400]>"
+        st.session_state['wtf'] = session_hists_r
+        session_hists_r_obj = session_hists_r.__str__()
+        st.warning(f"session_hists_r: {session_hists_r_obj}", icon="🔥")
+        # session_hists_r_obj = session_hists_r.json()  # ERROR: comment out becoz session_hists_r err is unresolved
+        # st.write(f'session_hists_r_obj: {session_hists_r_obj}') #test
+        # if 'histories' in session_hists_r_obj:
+        #     st.session_state['histories'] = session_hists_r_obj['histories']
+        # elif 'error' in session_ids_r_obj:
+        #     st.error(st.session_state['error'], icon="🚨")
 
         st.session_state['mode'] = "chat" # hard coded
         # connect to backend: get chat history as well as the session mode
         
     
-    def createSession(u_id, mode):
+    def createSession(mode):
         # 1. set endpoint depending on mode
         endpoint = None
         if mode=="TRANSLATE":
@@ -155,35 +152,32 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
             st.error(st.session_state['error'], icon="🚨")
 
         st.session_state['display'] = 'HOME'
-        # st.session_state['s_id'] = str(len(sessions['sessionIds'])+1)
         st.session_state['mode'] = mode
-        # sessions['sessionIds'].append(str(len(sessions['sessionIds'])+1))
 
+        # 4. remove previous messages from other session
         if 'messages' in st.session_state:
             del st.session_state['messages']
 
         st.write(st.session_state['s_id'])
         st.write(st.session_state['mode'])
-
+    # ------------- func end ------------- #
     
     with st.sidebar:
-        
         st.button('logout', on_click=logout_func) # logout button
 
-        # generate session buttons
         st.title("Chatrooms")
-        user_id = 1 # hard code user id
 
+        # select mode when creating new session
         mode = st.radio("Select mode for new chat session", ["chat", "translate"])
-        newchat = st.button('➕ Create', use_container_width=100, on_click=createSession, args=(user_id, mode,))
+        newchat = st.button('➕ Create', use_container_width=100, on_click=createSession, args=(mode,)) # create new session button
         
+        # past session buttons
         for session_id in st.session_state['sessionIds']:
             st.button(session_id, use_container_width=100, on_click=openSession, args=(session_id,))
 
     model_name = "gpt-35-turbo"
     if st.session_state['display'] == 'HOME':
         st.subheader("Welcome, "+st.session_state["login_tok"])
-        # Chat, Translate = st.tabs(["💬 Chat", "🗣️ Translate"])
         st.caption("Start a new chat below")
         if "messages" not in st.session_state:
             st.session_state["messages"] = [{"role":"assistant", "content": {"type":"text", "text": "welcome!!"}}]
