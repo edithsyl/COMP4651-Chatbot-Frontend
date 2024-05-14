@@ -72,10 +72,10 @@ class CustomCookieHandler:
         """
         Sets the re-authentication cookie.
         """
-        self.exp_date = self._set_exp_date()
+        # self.exp_date = self._set_exp_date()
         self.token = st.session_state['login_tok']
-        self.cookie_manager.set(self.cookie_name, self._token_encode(),
-                                expires_at=datetime.now() + timedelta(days=self.cookie_expiry_days))
+        # self.cookie_manager.set(self.cookie_name, self._token_encode(),
+        #                         expires_at=datetime.now() + timedelta(days=self.cookie_expiry_days))
 
     def _set_exp_date(self) -> str:
         """
