@@ -72,10 +72,16 @@ def login():
         if su:
             create_new_user()
 
-def logout():
+def logout_func():
     st.session_state['authentication_status']=False
     st.session_state['login_tok'] = None
     st.session_state['username'] = None
+    if "messages" in st.session_state:
+        del st.session_state["messages"]
+    if "mode" in st.session_state:
+        del st.session_state["mode"]
+    if "display" in st.session_state:
+        del st.session_state["display"]
 
 if "login_tok" not in st.session_state:
     st.session_state['authentication_status'] = False
@@ -133,6 +139,8 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
             endpoint=apis.get("CREATE-TRANSLATE-SESSION")
         if mode=="CHAT":
             endpoint=apis.get("CREATE-CHAT-SESSION")
+        else:
+            endpoint=apis.get("CREATE-CHAT-SESSION") # default
         # 2. request create new session
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
         create_session_r = requests.post(endpoint, headers=headers)
@@ -160,7 +168,7 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
     
     with st.sidebar:
         
-        st.button('logout', on_click=logout) # logout button
+        st.button('logout', on_click=logout_func) # logout button
 
         # generate session buttons
         st.title("Chatrooms")
