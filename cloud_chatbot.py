@@ -1,13 +1,28 @@
 import requests
 import streamlit as st
-
+import json, time, random # for requests try/except
 from apis import apis
+
+def sendReq(endpoint: str, body: dict, headers={'Accept': 'application/json'}, attempt=0):
+    try:
+        res = requests.post(endpoint, data=body, headers=headers)
+        res_obj = res.json() 
+    except Exception as err: #(requests.exceptions.ConnectionError, ValueError, json.decoder.JSONDecodeError):
+        st.warning(f"sendReq failed, err: {err}, attempt: {attempt}, res: {res}", icon="📮")
+        time.sleep(2**5 + random.random()*0.01) #exponential backoff
+        return sendReq(endpoint, body, headers, attempt+1)
+    else:
+        return res_obj
 
 # # ---------- custom login widget end ------------
 def check_credentials():
     login_body = {"email": st.session_state["email"], "password": st.session_state["password"]}
-    login_r = requests.post(apis.get("LOGIN"), data=login_body)
-    login_r_obj = login_r.json() 
+    # headers = {'Accept': 'application/json'}
+    # login_r = requests.post(apis.get("LOGIN"), data=login_body, headers={'Accept': 'application/json'})
+    # login_r_obj = login_r.json() 
+
+    login_r_obj = sendReq(apis.get("LOGIN"), login_body)
+    st.info(f"login_r_obj: {login_r_obj}")
     if "token" in login_r_obj:
         # login success, set session state and user info
         st.error(f"login_r_obj: {login_r_obj}", icon="🚨")
@@ -26,8 +41,8 @@ def create_new_user():
     # connect to backend: call to see if there is duplicated username/ email
     # if yes, ask for input again
     # else post a request to backend: create new user and auto login
-    signup_r = requests.post(apis.get("SIGNUP"), data=new_user_body)
-    signup_r_obj = signup_r.json() 
+    # signup_r = requests.post(apis.get("SIGNUP"), data=new_user_body, headers={'Accept': 'application/json'})
+    signup_r_obj = sendReq(apis.get("SIGNUP"), new_user_body)# signup_r.json() 
     if "created" in signup_r_obj:
         if signup_r_obj["created"]:
             if "token" in signup_r_obj:
@@ -69,14 +84,19 @@ def login():
 
 def logout_func():
     st.session_state['authentication_status']=False
-    st.session_state['login_tok'] = None
-    st.session_state['username'] = None
+    st.session_state['username'] = ""
+    st.session_state['email'] = ""
+    st.session_state['password'] = ""
+    if "login_tok" in st.session_state:
+        del st.session_state["login_tok"]
     if "messages" in st.session_state:
         del st.session_state["messages"]
     if "mode" in st.session_state:
         del st.session_state["mode"]
     if "display" in st.session_state:
         del st.session_state["display"]
+    if "sessionIds" in st.session_state:
+        del st.session_state["sessionIds"]
 
 if "login_tok" not in st.session_state:
     st.session_state['authentication_status'] = False
