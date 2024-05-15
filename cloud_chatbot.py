@@ -3,33 +3,34 @@ import streamlit as st
 import json, time, random # for requests try/except
 from apis import apis
 
-def sendReq(endpoint: str, body: dict, headers={'Accept': 'application/json'}, attempt=0):
+# helper function to send request
+def sendReq(endpoint: str, body={}, h={'Accept': 'application/json'}, attempt=0):
+    st.info(f"sendReq \n endpoint: {endpoint},  \nbody: {body}  \nh: {h}  \nattempt: {attempt}", icon="📮")
     try:
-        res = requests.post(endpoint, data=body, headers=headers)
+        res = requests.post(endpoint, data=body, headers=h)
         res_obj = res.json() 
     except Exception as err: #(requests.exceptions.ConnectionError, ValueError, json.decoder.JSONDecodeError):
+        if attempt == 5:
+            st.error(f"sendReq failed after 5 attempts", icon="📮")
         st.warning(f"sendReq failed, err: {err}, attempt: {attempt}, res: {res}", icon="📮")
         time.sleep(2**5 + random.random()*0.01) #exponential backoff
-        return sendReq(endpoint, body, headers, attempt+1)
+        return sendReq(endpoint, body, h, attempt+1)
     else:
         return res_obj
 
-# # ---------- custom login widget end ------------
+# --------------- login functions start ----------------- #
 def check_credentials():
+    # 1. send request to login endpoint
     login_body = {"email": st.session_state["email"], "password": st.session_state["password"]}
-    # headers = {'Accept': 'application/json'}
-    # login_r = requests.post(apis.get("LOGIN"), data=login_body, headers={'Accept': 'application/json'})
-    # login_r_obj = login_r.json() 
-
     login_r_obj = sendReq(apis.get("LOGIN"), login_body)
     st.info(f"login_r_obj: {login_r_obj}")
+
+    # 2. if login success, aka token is in obj, set session state and user info
     if "token" in login_r_obj:
-        # login success, set session state and user info
-        st.error(f"login_r_obj: {login_r_obj}", icon="🚨")
+        st.info(f"login_r_obj: {login_r_obj}", icon="⭐️")
         st.session_state['authentication_status']=True
         st.session_state['login_tok'] = login_r_obj['token']
-        # username, user id, token <- decoded from the jwt token (do it later)
-        st.session_state['username'] = 'alice'
+        st.session_state['username'] = 'alice' # username, user id, token <- decoded from the jwt token (do it later)
         st.rerun()
     elif "error" in login_r_obj:
         st.error(f"error: {login_r_obj['error']}", icon="🚨")
@@ -37,18 +38,20 @@ def check_credentials():
         st.error("invalid")
 
 def create_new_user():
-    new_user_body = {'username': st.session_state["username"], 'email': st.session_state["email"], 'password': st.session_state["password"]}
-    # connect to backend: call to see if there is duplicated username/ email
+    # TODO: 1. connect to backend: call to see if there is duplicated username/ email 
     # if yes, ask for input again
-    # else post a request to backend: create new user and auto login
-    # signup_r = requests.post(apis.get("SIGNUP"), data=new_user_body, headers={'Accept': 'application/json'})
-    signup_r_obj = sendReq(apis.get("SIGNUP"), new_user_body)# signup_r.json() 
+    # 2. post a request to backend: create new user and auto login
+    new_user_body = {'username': st.session_state["username"], 'email': st.session_state["email"], 'password': st.session_state["password"]}
+    signup_r_obj = sendReq(apis.get("SIGNUP"), new_user_body)
     if "created" in signup_r_obj:
         if signup_r_obj["created"]:
             if "token" in signup_r_obj:
+                tokenVal = signup_r_obj["token"]
+                st.info(f"token is {tokenVal}", "⭐️")
                 st.session_state['authentication_status']=True
                 st.session_state['login_tok'] = signup_r_obj["token"]
                 st.session_state['username'] = 'alice'
+                st.info(f"token is set to {st.session_state['login_tok']}", "䷍")
                 st.rerun()
             else:
                 st.error(f"no token error: {signup_r_obj}", "🚨")
@@ -57,8 +60,9 @@ def create_new_user():
     else:
         st.error(f"created does not exist error: {signup_r_obj}", "🚨")
 
+# --------------- login functions end ----------------- #
 
-# ---------- def login page-----#
+# --------------- def login page --------------- #
 def login():
     placeholder = st.empty()
     tabLogin, tabSignup = placeholder.tabs(['login', 'sign up'])
@@ -103,28 +107,28 @@ if "login_tok" not in st.session_state:
 if not st.session_state['authentication_status']:
     login()
 
-# ----- login page end here -----#
+# --------------- login page end here ---------------#
 
 elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success => go to Main page
-# ------ MAIN PAGE ----- #
+    # ------------- initialize session states start ------------ #
     if 'display' not in st.session_state:
         st.session_state['display'] = 'HOME' # or 'CHATROOM'
 
     if 'mode' not in st.session_state:
         st.session_state['mode'] = 'chat'
 
-    if 'session_history' not in st.session_state:
+    if 'sessionIds' not in st.session_state:
         # request chat sessions and add to session_state
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
-        session_ids_r = requests.post(apis.get("GET-CHAT-SESSIONS"), headers=headers)
-        session_ids_r_obj = session_ids_r.json() 
+        session_ids_r_obj = sendReq(apis.get("GET-CHAT-SESSIONS"), h=headers)
         if 'sessionIds' in session_ids_r_obj:
             st.session_state['sessionIds'] = session_ids_r_obj['sessionIds']
         elif 'error' in session_ids_r_obj:
-            st.error(st.session_state['error'], icon="🚨")
+            st.error(f"err: {session_ids_r_obj['error']}", icon="🚨")
+    # ------------- initialize session states end ---------------- #
 
-    # ------ function for  ------ #
-    def openSession(s_id: str):
+    # -------- on click function for past session buttons -------- #
+    def openSession_func(s_id: str):
         st.session_state['display'] = 'CHATROOM'
         st.session_state['s_id'] = s_id
         st.session_state['messages'] = [{"role": "user", "content": {"type": "text", "text": "history"}}]
@@ -132,9 +136,10 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         # connect to backend: get chat history and put into messages
 
         # request s_id session histories
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
-        body = {"sessionId": s_id}
-        session_hists_r = requests.post(apis.get("GET-CHAT-HISTORIES"), headers=headers, data=body) # ERROR: don't know why it return string "<Response [400]>"
+        open_session_headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
+        open_session_body = {"sessionId": s_id}
+
+        session_hists_r = sendReq(apis.get("GET-CHAT-HISTORIES"), body=open_session_body, h=open_session_headers) # ERROR: don't know why it return string "<Response [400]>"
         st.session_state['wtf'] = session_hists_r
         session_hists_r_obj = session_hists_r.__str__()
         st.warning(f"session_hists_r: {session_hists_r_obj}", icon="🔥")
@@ -147,9 +152,9 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
 
         st.session_state['mode'] = "chat" # hard coded
         # connect to backend: get chat history as well as the session mode
-        
-    
-    def createSession(mode):
+
+    # ------ on click function for create new session button ------ #
+    def createSession_func(mode):
         # 1. set endpoint depending on mode
         endpoint = None
         if mode=="TRANSLATE":
@@ -158,6 +163,7 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
             endpoint=apis.get("CREATE-CHAT-SESSION")
         else:
             endpoint=apis.get("CREATE-CHAT-SESSION") # default
+
         # 2. request create new session
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
         create_session_r = requests.post(endpoint, headers=headers)
@@ -180,22 +186,25 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
 
         st.write(st.session_state['s_id'])
         st.write(st.session_state['mode'])
-    # ------------- func end ------------- #
-    
+
+    # ------------------ on click functions end ------------------ #
+
+    # --------------------- interface start ---------------------- #
     with st.sidebar:
-        st.button('logout', on_click=logout_func) # logout button
+        # logout button
+        st.button('logout', on_click=logout_func) 
 
         st.title("Chatrooms")
 
-        # select mode when creating new session
+        # buttons for select mode and create new session
         mode = st.radio("Select mode for new chat session", ["chat", "translate"])
-        newchat = st.button('➕ Create', use_container_width=100, on_click=createSession, args=(mode,)) # create new session button
+        newchat = st.button('➕ Create', use_container_width=100, on_click=createSession_func, args=(mode,)) # create new session button
         
         # past session buttons
         for session_id in st.session_state['sessionIds']:
-            st.button(session_id, use_container_width=100, on_click=openSession, args=(session_id,))
+            st.button(session_id, use_container_width=100, on_click=openSession_func, args=(session_id,))
 
-    model_name = "gpt-35-turbo"
+    # content on main page
     if st.session_state['display'] == 'HOME':
         st.subheader("Welcome, "+st.session_state["login_tok"])
         st.caption("Start a new chat below")
