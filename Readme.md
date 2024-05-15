@@ -1,4 +1,4 @@
-# Build Chatbot: COMP4461
+# COMP4461 Cloud Project Frontend
 
 To run, following the following steps:
 
@@ -7,36 +7,9 @@ To run, following the following steps:
 3. `pip3 install streamlit-authenticator textract` [for user authentication service, upload file]
 4. `streamlit run cloud_chatbot.py` [modified for cloud chatbot project]
 
-  
-domain_chatbot.py: reference code from HCI lab code
-
-## User Authentication
-Reference: https://github.com/mkhorasani/Streamlit-Authenticator/tree/main?tab=readme-ov-file#authenticatelogin
-
-user_credentials.yaml: a dummy file for user db.
-
-hash_pwd.py: helper for hashing the pwds stored in the yaml file.
-
-
-
-Right now there's two acc:
-
-username: jsmith
-
-password: abc
-
-username: rbriggs
-
-password: def
-
-
 ## TODO
-
-1. Upload component does not work 
-2. User input box and user submission
-3. show previous chats/messages on screen
-4. Create account button on user auth page
-
+1. fix open session error 
+2. send messages
 
 
 

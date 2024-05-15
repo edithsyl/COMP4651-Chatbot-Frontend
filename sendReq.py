@@ -1,6 +1,6 @@
 import requests
 import streamlit as st
-import json, time, random # for requests try/except
+import time, random # for requests try/except
 
 # helper function to send request
 def sendReq(endpoint: str, body={}, h={'Accept': 'application/json'}, attempt=0):
