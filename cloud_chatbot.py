@@ -2,21 +2,7 @@ import requests
 import streamlit as st
 import json, time, random # for requests try/except
 from apis import apis
-
-# helper function to send request
-def sendReq(endpoint: str, body={}, h={'Accept': 'application/json'}, attempt=0):
-    st.info(f"sendReq \n endpoint: {endpoint},  \nbody: {body}  \nh: {h}  \nattempt: {attempt}", icon="📮")
-    try:
-        res = requests.post(endpoint, data=body, headers=h)
-        res_obj = res.json() 
-    except Exception as err:
-        if attempt == 5:
-            st.error(f"sendReq failed after 5 attempts", icon="📮")
-        st.warning(f"sendReq failed, err: {err}, attempt: {attempt}, res: {res}", icon="📮")
-        time.sleep(2**5 + random.random()*0.01) # exponential backoff
-        return sendReq(endpoint, body, h, attempt+1)
-    else:
-        return res_obj
+from sendReq import sendReq
 
 # --------------- auth helper functions start ----------------- #
 # FUNC 1: send request for login
@@ -47,18 +33,18 @@ def create_new_user():
         if signup_r_obj["created"]:
             if "token" in signup_r_obj:
                 tokenVal = signup_r_obj["token"]
-                st.info(f"token is {tokenVal}", "⭐️")
+                st.info(f"token is {tokenVal}", icon="⭐️")
                 st.session_state['authentication_status']=True
                 st.session_state['login_tok'] = signup_r_obj["token"]
                 st.session_state['username'] = 'alice'
-                st.info(f"token is set to {st.session_state['login_tok']}", "䷍")
+                st.info(f"token is set to {st.session_state['login_tok']}", icon="䷍")
                 st.rerun() # refresh page
             else:
-                st.error(f"no token error: {signup_r_obj}", "🚨")
+                st.error(f"no token error: {signup_r_obj}", icon="🚨")
         else:
-            st.error(f"created is false error: {signup_r_obj}", "🚨")
+            st.error(f"created is false error: {signup_r_obj}", icon="🚨")
     else:
-        st.error(f"created does not exist error: {signup_r_obj}", "🚨")
+        st.error(f"created does not exist error: {signup_r_obj}", icon="🚨")
 
 # FUNC 3: delete session_states for logout in sidebar
 def logout_func():
@@ -112,10 +98,10 @@ def auth():
 if "login_tok" not in st.session_state:
     st.session_state['authentication_status'] = False
 
-# if user is not authenticated => show auth component
-if not st.session_state['authentication_status']:
+
+if not st.session_state['authentication_status']: # if user is not authenticated => show auth component
     auth()
-elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success => go to Main page
+elif st.session_state["authentication_status"]:   # if user is authenticated => go to home interface
     # ------------- initialize session states start ------------ #
     if 'display' not in st.session_state:
         st.session_state['display'] = 'HOME' # or 'CHATROOM'
@@ -180,6 +166,8 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         if 'sessionId' in create_session_r_obj:
             st.session_state['s_id'] = create_session_r_obj['sessionId']
             st.session_state['sessionIds'].append(create_session_r_obj['sessionId'])
+            
+            st.success(f"created new session: {st.session_state['s_id']}  \tmode: {st.session_state['mode']}")
         elif 'error' in create_session_r_obj:
             st.error(st.session_state['error'], icon="🚨")
 
@@ -190,8 +178,6 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         if 'messages' in st.session_state:
             del st.session_state['messages']
 
-        st.write(st.session_state['s_id'])
-        st.write(st.session_state['mode'])
 
     # -------------------- on click functions end -------------------- #
 
@@ -235,4 +221,4 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
 
 
 
-"st.session_state object:", st.session_state      # for testing
+"[TEST USE] st.session_state object:", st.session_state      # for testing
