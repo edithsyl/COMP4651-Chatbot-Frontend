@@ -9,21 +9,21 @@ def sendReq(endpoint: str, body={}, h={'Accept': 'application/json'}, attempt=0)
     try:
         res = requests.post(endpoint, data=body, headers=h)
         res_obj = res.json() 
-    except Exception as err: #(requests.exceptions.ConnectionError, ValueError, json.decoder.JSONDecodeError):
+    except Exception as err:
         if attempt == 5:
             st.error(f"sendReq failed after 5 attempts", icon="📮")
         st.warning(f"sendReq failed, err: {err}, attempt: {attempt}, res: {res}", icon="📮")
-        time.sleep(2**5 + random.random()*0.01) #exponential backoff
+        time.sleep(2**5 + random.random()*0.01) # exponential backoff
         return sendReq(endpoint, body, h, attempt+1)
     else:
         return res_obj
 
-# --------------- login functions start ----------------- #
+# --------------- auth helper functions start ----------------- #
+# FUNC 1: send request for login
 def check_credentials():
     # 1. send request to login endpoint
     login_body = {"email": st.session_state["email"], "password": st.session_state["password"]}
     login_r_obj = sendReq(apis.get("LOGIN"), login_body)
-    st.info(f"login_r_obj: {login_r_obj}")
 
     # 2. if login success, aka token is in obj, set session state and user info
     if "token" in login_r_obj:
@@ -31,15 +31,15 @@ def check_credentials():
         st.session_state['authentication_status']=True
         st.session_state['login_tok'] = login_r_obj['token']
         st.session_state['username'] = 'alice' # username, user id, token <- decoded from the jwt token (do it later)
-        st.rerun()
+        st.rerun() # refresh page
     elif "error" in login_r_obj:
         st.error(f"error: {login_r_obj['error']}", icon="🚨")
     else:
         st.error("invalid")
 
+# FUCN 2: send request for signup
 def create_new_user():
-    # TODO: 1. connect to backend: call to see if there is duplicated username/ email 
-    # if yes, ask for input again
+    # TODO: 1. connect to backend: call to see if there is duplicated username/ email, if yes, ask for input again
     # 2. post a request to backend: create new user and auto login
     new_user_body = {'username': st.session_state["username"], 'email': st.session_state["email"], 'password': st.session_state["password"]}
     signup_r_obj = sendReq(apis.get("SIGNUP"), new_user_body)
@@ -52,7 +52,7 @@ def create_new_user():
                 st.session_state['login_tok'] = signup_r_obj["token"]
                 st.session_state['username'] = 'alice'
                 st.info(f"token is set to {st.session_state['login_tok']}", "䷍")
-                st.rerun()
+                st.rerun() # refresh page
             else:
                 st.error(f"no token error: {signup_r_obj}", "🚨")
         else:
@@ -60,11 +60,30 @@ def create_new_user():
     else:
         st.error(f"created does not exist error: {signup_r_obj}", "🚨")
 
-# --------------- login functions end ----------------- #
+# FUNC 3: delete session_states for logout in sidebar
+def logout_func():
+    st.session_state['authentication_status']=False
+    st.session_state['username'] = ""
+    st.session_state['email'] = ""
+    st.session_state['password'] = ""
+    if "login_tok" in st.session_state:
+        del st.session_state["login_tok"]
+    if "messages" in st.session_state:
+        del st.session_state["messages"]
+    if "mode" in st.session_state:
+        del st.session_state["mode"]
+    if "display" in st.session_state:
+        del st.session_state["display"]
+    if "sessionIds" in st.session_state:
+        del st.session_state["sessionIds"]
 
-# --------------- def login page --------------- #
-def login():
+# -------------------- auth helper functions end ---------------------- #
+
+# -------------- auth: login & signup component start ----------------- #
+def auth():
     placeholder = st.empty()
+
+    # use tabs to switch between login vs signup
     tabLogin, tabSignup = placeholder.tabs(['login', 'sign up'])
     with tabLogin:
         login_form = tabLogin.form('Login', clear_on_submit=False)
@@ -86,29 +105,16 @@ def login():
         if su:
             create_new_user()
 
-def logout_func():
-    st.session_state['authentication_status']=False
-    st.session_state['username'] = ""
-    st.session_state['email'] = ""
-    st.session_state['password'] = ""
-    if "login_tok" in st.session_state:
-        del st.session_state["login_tok"]
-    if "messages" in st.session_state:
-        del st.session_state["messages"]
-    if "mode" in st.session_state:
-        del st.session_state["mode"]
-    if "display" in st.session_state:
-        del st.session_state["display"]
-    if "sessionIds" in st.session_state:
-        del st.session_state["sessionIds"]
+# ------------- auth: login & signup component end --------------- #
 
+
+# check current status to decide show auth component or home interface
 if "login_tok" not in st.session_state:
     st.session_state['authentication_status'] = False
+
+# if user is not authenticated => show auth component
 if not st.session_state['authentication_status']:
-    login()
-
-# --------------- login page end here ---------------#
-
+    auth()
 elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success => go to Main page
     # ------------- initialize session states start ------------ #
     if 'display' not in st.session_state:
@@ -143,7 +149,8 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         st.session_state['wtf'] = session_hists_r
         session_hists_r_obj = session_hists_r.__str__()
         st.warning(f"session_hists_r: {session_hists_r_obj}", icon="🔥")
-        # session_hists_r_obj = session_hists_r.json()  # ERROR: comment out becoz session_hists_r err is unresolved
+
+        # ERROR: I comment out below code becoz session_hists_r err is unresolved
         # st.write(f'session_hists_r_obj: {session_hists_r_obj}') #test
         # if 'histories' in session_hists_r_obj:
         #     st.session_state['histories'] = session_hists_r_obj['histories']
@@ -165,12 +172,11 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
             endpoint=apis.get("CREATE-CHAT-SESSION") # default
 
         # 2. request create new session
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
-        create_session_r = requests.post(endpoint, headers=headers)
+        create_session_headers = {"Content-Type": "application/json", "Authorization": f"Bearer {st.session_state['login_tok']}"}
+        create_session_r_obj = sendReq(endpoint, h=create_session_headers)
 
         # 3. check if response contains sessionId
         # ---- Yes => success, add the sessionId to session_state
-        create_session_r_obj = create_session_r.json() 
         if 'sessionId' in create_session_r_obj:
             st.session_state['s_id'] = create_session_r_obj['sessionId']
             st.session_state['sessionIds'].append(create_session_r_obj['sessionId'])
@@ -187,9 +193,9 @@ elif st.session_state["authentication_status"]: # USER AUTHENTICATION is success
         st.write(st.session_state['s_id'])
         st.write(st.session_state['mode'])
 
-    # ------------------ on click functions end ------------------ #
+    # -------------------- on click functions end -------------------- #
 
-    # --------------------- interface start ---------------------- #
+    # --------------------- home interface start --------------------- #
     with st.sidebar:
         # logout button
         st.button('logout', on_click=logout_func) 
