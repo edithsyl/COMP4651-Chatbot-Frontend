@@ -7,15 +7,15 @@ To run, following the following steps:
 3. `pip3 install streamlit-authenticator textract` [for user authentication service, upload file]
 4. `streamlit run cloud_chatbot.py` [modified for cloud chatbot project]
 
-  
-domain_chatbot.py: reference code from HCI lab code
+# Demo video
 
+
+https://github.com/edithsyl/COMP4651-Chatbot-Frontend/assets/69338737/6f4fb067-eb33-4121-b333-8ca82cdda20d
+
+
+# Final Interface
 
 <img width="1255" alt="Screenshot 2024-05-18 at 9 03 29 AM" src="https://github.com/edithsyl/COMP4651-Chatbot-Frontend/assets/69338737/e3217574-8aa5-4b9e-b2d7-869b7aaae108">
 
 <img width="1313" alt="Screenshot 2024-05-18 at 9 03 48 AM" src="https://github.com/edithsyl/COMP4651-Chatbot-Frontend/assets/69338737/890e0bb6-1f46-4d75-8dc2-ef9971466e30">
 
-
-
-
-![Uploading Screenshot 2024-05-18 at 9.04.31 AM.png…]()
