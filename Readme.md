@@ -1,14 +1,20 @@
-# Build Chatbot: COMP4461
+# COMP4461 Cloud Computing Project: Serverless ChatBot App
 
-To run, following the following steps:
+The Serverless ChatBot App is a full-stack solution that harnesses the power of OpenAI's ChatGPT language model. It boasts a serverless architecture with Streamlit as the frontend framework, OpenFaas serverless functions as the backend, and MongoDB as the database. This app offers user login, multiple chat sessions, and persistent chat histories, ensuring a seamless and efficient chatbot experience. 
 
-1. create a new python environment (search online if you don't know)
-2. `pip install -r requirements.txt`
-3. `pip3 install streamlit-authenticator textract` [for user authentication service, upload file]
-4. `streamlit run cloud_chatbot.py` [modified for cloud chatbot project]
+# Architecture
+
+<img width="585" alt="Screenshot 2024-05-18 at 11 39 29 PM" src="https://github.com/edithsyl/COMP4651-Chatbot-Frontend/assets/69338737/ee139be5-2eba-4637-b0d5-df99a880ad6d">
+
+Streamlit: an open-source Python framework that allows developers to create interactive web applications and data visualization tools.
+OpenFaas: an open-source framework for building serverless functions on top of containers, specifically designed for Kubernetes. Serves as the backend of our App.
+MongoDB: a popular open-source NoSQL database management system. Used to store user login information and chat histories.
+UST Azure OpenAI API: An API to OpenAI large language models, powers the functionality of the app
+
+# About this repository
+Please note that this repository focuses solely on the frontend implementation and does not include the backend code or serverless infrastructure. 
 
 # Demo video
-
 
 https://github.com/edithsyl/COMP4651-Chatbot-Frontend/assets/69338737/6f4fb067-eb33-4121-b333-8ca82cdda20d
 
