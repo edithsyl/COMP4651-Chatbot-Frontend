@@ -10,33 +10,12 @@ To run, following the following steps:
   
 domain_chatbot.py: reference code from HCI lab code
 
-## User Authentication
-Reference: https://github.com/mkhorasani/Streamlit-Authenticator/tree/main?tab=readme-ov-file#authenticatelogin
 
-user_credentials.yaml: a dummy file for user db.
+<img width="1255" alt="Screenshot 2024-05-18 at 9 03 29 AM" src="https://github.com/edithsyl/COMP4651-Chatbot-Frontend/assets/69338737/e3217574-8aa5-4b9e-b2d7-869b7aaae108">
 
-hash_pwd.py: helper for hashing the pwds stored in the yaml file.
-
-
-
-Right now there's two acc:
-
-username: jsmith
-
-password: abc
-
-username: rbriggs
-
-password: def
-
-
-## TODO
-
-1. Upload component does not work 
-2. User input box and user submission
-3. show previous chats/messages on screen
-4. Create account button on user auth page
+<img width="1313" alt="Screenshot 2024-05-18 at 9 03 48 AM" src="https://github.com/edithsyl/COMP4651-Chatbot-Frontend/assets/69338737/890e0bb6-1f46-4d75-8dc2-ef9971466e30">
 
 
 
 
+![Uploading Screenshot 2024-05-18 at 9.04.31 AM.png…]()
